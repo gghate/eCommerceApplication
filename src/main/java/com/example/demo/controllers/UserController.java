@@ -3,6 +3,8 @@ package com.example.demo.controllers;
 import java.util.Optional;
 
 import com.example.demo.ExceptionHandling.CustomException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +27,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-	
+	private static Logger logger = LogManager.getLogger(UserController.class);
 	@Autowired
 	private UserRepository userRepository;
 	
@@ -51,14 +53,31 @@ public class UserController {
 		User user = new User();
 		user.setUsername(createUserRequest.getUsername());
        if(createUserRequest.getPassword().length()<7)
-	    throw new CustomException("Password length should greater than or equal to 7");
+	   {
+		   logger.error("Failed creating user. Password length should be greater than or equal to 7");
+		   throw new CustomException("Password length should greater than or equal to 7");
+	   }
+
        if(!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword()))
+	   {
+		   logger.error("Failed creating user. Password and confirmed password do not match");
 		   throw new CustomException("Password and confirmed password do not match");
+	   }
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
 		Cart cart = new Cart();
 		cartRepository.save(cart);
 		user.setCart(cart);
-		userRepository.save(user);
+		try{
+			userRepository.save(user);
+			logger.info("User created with username : "+user.getUsername());
+		}
+		catch (Exception e)
+		{
+			logger.error("Failed creating user");
+			throw new CustomException(e.getMessage());
+
+		}
+
 		return ResponseEntity.ok(user);
 	}
 	
