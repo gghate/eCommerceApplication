@@ -2,6 +2,9 @@ package com.example.demo.controllers;
 
 import java.util.List;
 
+import com.example.demo.ExceptionHandling.CustomException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +23,7 @@ import com.example.demo.model.persistence.repositories.UserRepository;
 @RestController
 @RequestMapping("/api/order")
 public class OrderController {
-	
+	private static Logger logger = LogManager.getLogger(OrderController.class);
 	
 	@Autowired
 	private UserRepository userRepository;
@@ -30,13 +33,22 @@ public class OrderController {
 	
 	
 	@PostMapping("/submit/{username}")
-	public ResponseEntity<UserOrder> submit(@PathVariable String username) {
+	public ResponseEntity<UserOrder> submit(@PathVariable String username) throws CustomException{
 		User user = userRepository.findByUsername(username);
 		if(user == null) {
+			logger.error("Failed to submit order.User not found");
 			return ResponseEntity.notFound().build();
 		}
 		UserOrder order = UserOrder.createFromCart(user.getCart());
-		orderRepository.save(order);
+		try{
+			logger.info("Success !.Order submitted successfully");
+			orderRepository.save(order);
+		}
+		catch (Exception e)
+		{
+			logger.error("Failed to submit order "+e.getMessage());
+			throw new CustomException(e.getMessage());
+		}
 		return ResponseEntity.ok(order);
 	}
 	
