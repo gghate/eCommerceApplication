@@ -52,7 +52,7 @@ public class UserController {
 		user.setUsername(createUserRequest.getUsername());
        if(createUserRequest.getPassword().length()<7)
 	    throw new CustomException("Password length should greater than or equal to 7");
-       if(createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword()))
+       if(!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword()))
 		   throw new CustomException("Password and confirmed password do not match");
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
 		Cart cart = new Cart();
