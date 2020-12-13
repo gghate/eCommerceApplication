@@ -3,10 +3,13 @@ package com.example.demo;
 import com.example.demo.ExceptionHandling.CustomException;
 import com.example.demo.controllers.UserController;
 import com.example.demo.model.persistence.User;
+import com.example.demo.model.persistence.UserOrder;
 import com.example.demo.model.persistence.repositories.CartRepository;
 import com.example.demo.model.persistence.repositories.UserRepository;
 import com.example.demo.model.requests.CreateUserRequest;
+import com.example.demo.model.requests.ModifyCartRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class UserControllerTest {
+public class ControllerTest {
 
     @Autowired
     private MockMvc mvc;
@@ -96,6 +99,51 @@ public class UserControllerTest {
        Assert.assertNotNull(result.getResponse().getHeader("Authorization"));
     }
 
+    @Test
+    public  void verify_submitAddToCart() throws Exception
+    {
+        CreateUserRequest user=new CreateUserRequest("Test","1234567","1234567");
+        MvcResult createUser= mvc.perform(MockMvcRequestBuilders.post("/api/user/create").content(new ObjectMapper().writeValueAsString(user)).
+                contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult loginResult= mvc.perform(MockMvcRequestBuilders.post("/login").content(new ObjectMapper().writeValueAsString(user)))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult addToCartResult=mvc.perform(MockMvcRequestBuilders.post("/api/cart/addToCart")
+                  .content(new ObjectMapper().writeValueAsString(getCart("Test")))
+                  .accept(MediaType.APPLICATION_JSON)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization",loginResult.getResponse().getHeader("Authorization")))
+                  .andExpect(status().isOk()).andReturn();
+    }
+    @Test
+    public  void verify_submitOrderAndGetOrderHistory() throws Exception
+    {
+        CreateUserRequest user=new CreateUserRequest("Test1","1234567","1234567");
+        MvcResult createUser= mvc.perform(MockMvcRequestBuilders.post("/api/user/create").content(new ObjectMapper().writeValueAsString(user)).
+                contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        MvcResult loginResult= mvc.perform(MockMvcRequestBuilders.post("/login").content(new ObjectMapper().writeValueAsString(user)))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult addToCartResult=mvc.perform(MockMvcRequestBuilders.post("/api/cart/addToCart")
+                .content(new ObjectMapper().writeValueAsString(getCart("Test1")))
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization",loginResult.getResponse().getHeader("Authorization")))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult submitOrderResult=mvc.perform(MockMvcRequestBuilders.post("/api/order/submit/Test1")
+                .header("Authorization",loginResult.getResponse().getHeader("Authorization")))
+                .andExpect(status().isOk()).andReturn();
+        ObjectMapper mapper=new ObjectMapper();
+        UserOrder order=new ObjectMapper().readValue(submitOrderResult.getResponse().getContentAsString(),UserOrder.class);
+        Assert.assertEquals(order.getUser().getUsername(),"Test1");
+        Assert.assertNotNull(order.getItems());
+        MvcResult orderHistory=mvc.perform(MockMvcRequestBuilders.get("/api/order/history/Test1")
+                .header("Authorization",loginResult.getResponse().getHeader("Authorization")))
+                .andExpect(status().isOk()).andReturn();
+    }
     public static CreateUserRequest getUser()
     {
         CreateUserRequest createUserRequest=new CreateUserRequest();
@@ -104,4 +152,14 @@ public class UserControllerTest {
         createUserRequest.setConfirmPassword("Ghate12345");
         return createUserRequest;
     }
+
+    public static ModifyCartRequest getCart(String username)
+    {
+        ModifyCartRequest cartRequest=new ModifyCartRequest();
+        cartRequest.setItemId(1);
+        cartRequest.setUsername(username);
+        cartRequest.setQuantity(1);
+        return cartRequest;
+    }
+
 }
