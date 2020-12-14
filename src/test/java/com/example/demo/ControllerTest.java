@@ -117,6 +117,23 @@ public class ControllerTest {
                   .andExpect(status().isOk()).andReturn();
     }
     @Test
+    public void verify_UnauthorizedAcess() throws Exception
+    {
+        CreateUserRequest user=new CreateUserRequest("Test2","1234567","1234567");
+        MvcResult createUser= mvc.perform(MockMvcRequestBuilders.post("/api/user/create").content(new ObjectMapper().writeValueAsString(user)).
+                contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult loginResult= mvc.perform(MockMvcRequestBuilders.post("/login").content(new ObjectMapper().writeValueAsString(user)))
+                .andExpect(status().isOk()).andReturn();
+        MvcResult addToCartResult=mvc.perform(MockMvcRequestBuilders.post("/api/cart/addToCart")
+                .content(new ObjectMapper().writeValueAsString(getCart("Test")))
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON))  //Without Authorization header
+                .andExpect(status().is4xxClientError()).andReturn();
+    }
+
+    @Test
     public  void verify_submitOrderAndGetOrderHistory() throws Exception
     {
         CreateUserRequest user=new CreateUserRequest("Test1","1234567","1234567");
