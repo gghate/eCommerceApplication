@@ -1,5 +1,8 @@
 package com.example.demo.ExceptionHandling;
 
+import com.example.demo.controllers.UserController;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -12,11 +15,12 @@ import java.sql.Timestamp;
 
 @ControllerAdvice
 public class ExceptionHandlerClass {
-
+    private static Logger logger = LogManager.getLogger(UserController.class);
     @ExceptionHandler({CustomException.class})
     public ResponseEntity<ExceptionMessage> restException(CustomException e,WebRequest request)
     {
         String path=((ServletWebRequest)request).getRequest().getRequestURI().toString();
+        logger.error("Exception : "+e.getMessage()+" Path : "+path);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage(),"Failure",""+new Timestamp(System.currentTimeMillis()),path), HttpStatus.BAD_REQUEST);
 
     }
